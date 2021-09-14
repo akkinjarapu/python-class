@@ -1,0 +1,5 @@
+2021-09-14 10:59:10,277 - root - 20624 - DEBUG - This is a debug message
+2021-09-14 10:59:10,278 - root - 20624 - INFO - This is an info message
+2021-09-14 10:59:10,278 - root - 20624 - WARNING - This is a warning message
+2021-09-14 10:59:10,278 - root - 20624 - ERROR - This is an error message
+2021-09-14 10:59:10,278 - root - 20624 - CRITICAL - This is a critical message
