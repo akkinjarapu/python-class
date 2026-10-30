@@ -68,29 +68,25 @@ def get_inst_wise_prgms_and_counts(in_path):
 
     return inst_prgms, inst_prgm_counts
 
-def distribute_85_15(prgm_inst_map, header_names_list, inst_prgm_counts, key, fromcat):
+def distribute_85_15(prgm_inst_map, header_names_list, inst_prgm_counts, key, fromCat):
+    unr_forward = 0
+    sw_forward = 0
     for prg, institutes in prgm_inst_map.items():
         random.shuffle(institutes)
         
-        unr_forward = 0
-        sw_forward = 0
         for inst in institutes:
-            seats = inst_prgm_counts[(inst, prg)][0 if fromcat == 'OC' else 1]
+            seats = inst_prgm_counts[(inst, prg)][0 if fromCat == 'OC' else 1]
             unr_forward += seats * 0.15
-            unr_seats = int(unr_forward) 
-            unr_forward -= unr_seats
+            unr_seats = unr_forward // 1 # floor value
             au_svu_seats = seats - unr_seats
-            if unr_forward > 0:
-                au_svu_seats -= 1
-                unr_seats += 1
-                unr_forward -= 1
-                
+            unr_forward -= unr_seats
+            
             if key[1][:3] == 'GEN':
-                unr_index = bisect.bisect_left(header_names_list, f"{fromcat}_{'GEN' if key[1] == 'GEN' else 'GIRLS'}_UR") + 2
-                au_svu_index = bisect.bisect_left(header_names_list, f"{fromcat}_{'GEN' if key[1] == 'GEN' else 'GIRLS'}_{key[0]}") + 2
+                unr_index = bisect.bisect_left(header_names_list, f"{fromCat}_{'GEN' if key[1] == 'GEN' else 'GIRLS'}_UR") + 2
+                au_svu_index = bisect.bisect_left(header_names_list, f"{fromCat}_{'GEN' if key[1] == 'GEN' else 'GIRLS'}_{key[0]}") + 2
                 inst_prgm_counts[(inst, prg)][unr_index] = unr_seats
                 inst_prgm_counts[(inst, prg)][au_svu_index] = au_svu_seats
-            elif fromcat == 'OC' and key[1][:3] in ['MUS', 'CHR']:
+            elif fromCat == 'OC' and key[1][:3] in ['MUS', 'CHR']:
                 unr_index = bisect.bisect_left(header_names_list, f"{key[1][:3]}_{'GEN' if key[1] in ['MUS', 'CHR'] else 'GIRLS'}_UR") + 2
                 au_svu_index = bisect.bisect_left(header_names_list, f"{key[1][:3]}_{'GEN' if key[1] in ['MUS', 'CHR'] else 'GIRLS'}_{key[0]}") + 2
                 inst_prgm_counts[(inst, prg)][unr_index] = unr_seats
@@ -98,16 +94,13 @@ def distribute_85_15(prgm_inst_map, header_names_list, inst_prgm_counts, key, fr
             elif key[1][:3] == 'SWI':
                 # AU (65.62%), SVU (34.38%)
                 sw_forward += au_svu_seats * 0.3438
-                svu_seats = int(sw_forward) 
-                sw_forward -= svu_seats
+                svu_seats = sw_forward // 1 # floor value
                 au_seats = au_svu_seats - svu_seats
-                if sw_forward > 0:
-                    au_seats -= 1
-                    svu_seats += 1
-                    sw_forward -= 1
-                unr_index = bisect.bisect_left(header_names_list, f"{fromcat}_{'GEN' if key[1] == 'SWI' else 'GIRLS'}_UR") + 2
-                au_index = bisect.bisect_left(header_names_list, f"{fromcat}_{'GEN' if key[1] == 'SWI' else 'GIRLS'}_AU") + 2
-                svu_index = bisect.bisect_left(header_names_list, f"{fromcat}_{'GEN' if key[1] == 'SWI' else 'GIRLS'}_SVU") + 2
+                sw_forward -= svu_seats
+                
+                unr_index = bisect.bisect_left(header_names_list, f"{fromCat}_{'GEN' if key[1] == 'SWI' else 'GIRLS'}_UR") + 2
+                au_index = bisect.bisect_left(header_names_list, f"{fromCat}_{'GEN' if key[1] == 'SWI' else 'GIRLS'}_AU") + 2
+                svu_index = bisect.bisect_left(header_names_list, f"{fromCat}_{'GEN' if key[1] == 'SWI' else 'GIRLS'}_SVU") + 2
                 inst_prgm_counts[(inst, prg)][unr_index] = unr_seats
                 inst_prgm_counts[(inst, prg)][au_index] = au_seats
                 inst_prgm_counts[(inst, prg)][svu_index] = svu_seats
@@ -115,46 +108,40 @@ def distribute_85_15(prgm_inst_map, header_names_list, inst_prgm_counts, key, fr
                 continue
 
 def distribute_gen_girls(prgm_inst_map, header_names_list, inst_prgm_counts):
+    girls_forward = 0
     for prg, institutes in prgm_inst_map.items():
         for reg in ['AU', 'SVU', 'UR']:
             for comm in ['OC', 'MUS', 'CHR', 'EWS']:
                 source_index = bisect.bisect_left(header_names_list, f"{comm}_GEN_{reg}") + 2
                 random.shuffle(institutes)
 
-                girls_forward = 0
                 for inst in institutes:
                     seats = inst_prgm_counts[(inst, prg)][source_index]
                     if seats == 0:
                         continue
                     girls_forward += seats / 3
-                    girls_seats = int(girls_forward)
+                    girls_seats = girls_forward // 1
                     girls_forward -= girls_seats
-                    if girls_forward > 0:
-                        girls_seats += 1
-                        girls_forward -= 1
 
                     girls_index = bisect.bisect_left(header_names_list, f"{comm}_GIRLS_{reg}") + 2
                     inst_prgm_counts[(inst, prg)][source_index] -= girls_seats
                     inst_prgm_counts[(inst, prg)][girls_index] = girls_seats
 
 def distribute_between_two_columns(prgm_inst_map, header_names_list, inst_prgm_counts, fromcat, tocat, rempercent):
+    rem_forward = 0
     for prg, institutes in prgm_inst_map.items():
         for reg in ['AU', 'SVU', 'UR']:
             for comm in ['GEN', 'GIRLS']:
                 source_index = bisect.bisect_left(header_names_list, f"{fromcat}_{comm}_{reg}") + 2
                 random.shuffle(institutes)
                 
-                rem_forward = 0
                 for inst in institutes:
                     seats = inst_prgm_counts[(inst, prg)][source_index]
                     if seats == 0:
                         continue
                     rem_forward += seats * rempercent
-                    rem_seats = int(rem_forward)
+                    rem_seats = rem_forward // 1 # floor value
                     rem_forward -= rem_seats
-                    if rem_forward > 0:
-                        rem_seats += 1
-                        rem_forward -= 1
 
                     girls_index = bisect.bisect_left(header_names_list, f"{tocat}_{comm}_{reg}") + 2
                     inst_prgm_counts[(inst, prg)][source_index] -= rem_seats
